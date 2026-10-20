@@ -131,7 +131,7 @@ program
       return;
     }
     const store = createKeyringStore(config.username);
-    const refreshToken = await store.getRefreshToken();
+    const refreshToken = config.refreshToken || (await store.getRefreshToken());
     if (refreshToken) {
       await revokeToken({
         clientId: config.clientId,
@@ -141,7 +141,9 @@ program
       });
     }
     await store.clear();
-    console.log('Logged out.');
+    console.log(config.refreshToken
+      ? 'Logged out. Also remove REDDIT_REFRESH_TOKEN from your environment.'
+      : 'Logged out.');
   });
 
 program

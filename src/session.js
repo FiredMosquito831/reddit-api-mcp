@@ -5,12 +5,14 @@ import { clientCredentialsGrant, passwordGrant, refreshAccessToken } from './oau
 import { createFileLog, createWriteGuard } from './safety.js';
 import { createKeyringStore } from './store.js';
 
-// Where access tokens come from in each auth mode. The only thing this persists is the OAuth refresh
-// token, and that goes to the keychain. REDDIT_REFRESH_TOKEN supplies one from the environment instead,
-// and nothing is written then.
-export function tokenSourceFor(config, store) {
+// Where access tokens come from in each auth mode.
+//
+// oauth: the refresh token comes from REDDIT_REFRESH_TOKEN when it is set, and from the keychain otherwise.
+// Reddit may issue a new refresh token on a refresh, so the newest one is kept for the rest of this process.
+// The keychain copy is updated too. A refresh token from the environment is never written anywhere.
+export function tokenSourceFor(config, store, fetch = globalThis.fetch) {
   const common = {
-    fetch: globalThis.fetch,
+    fetch,
     clientId: config.clientId,
     clientSecret: config.clientSecret,
     userAgent: config.userAgent,
@@ -21,11 +23,15 @@ export function tokenSourceFor(config, store) {
   if (config.authMode === 'app') {
     return () => clientCredentialsGrant(common);
   }
+  let current = config.refreshToken;
   return async () => {
-    const refreshToken = config.refreshToken || (await store.getRefreshToken());
+    const refreshToken = current || (await store.getRefreshToken());
     if (!refreshToken) throw new Error('Not logged in. Run "reddit-cli login" first.');
     const tokens = await refreshAccessToken({ ...common, refreshToken });
-    if (tokens.refreshToken && !config.refreshToken) await store.setRefreshToken(tokens.refreshToken);
+    if (tokens.refreshToken) {
+      current = tokens.refreshToken;
+      if (!config.refreshToken) await store.setRefreshToken(tokens.refreshToken);
+    }
     return tokens;
   };
 }

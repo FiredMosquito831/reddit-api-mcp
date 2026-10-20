@@ -1,146 +1,103 @@
 # reddit-api-mcp
 
-Control your own Reddit account from the command line or from Claude. Read feeds, search, open threads and their comments, post, reply, edit, delete, vote, join and leave subreddits, and save items.
+Control your own Reddit account from the command line or from Claude.
 
-It ships four ways to run:
+It reads feeds, searches, opens threads with their full comment trees, looks up users, and writes: posts, replies, edits, deletes, votes, joining and leaving subreddits, and saving items. Every write is guarded: it asks first, it can be previewed, and it is spaced and capped.
 
-- `reddit-cli`: a command-line tool.
-- `reddit-api-mcp`: an MCP server, over stdio for Claude Desktop and Claude Code, or over Streamable HTTP behind a bearer token.
-- A Docker image for the HTTP server.
-- A Claude Desktop extension (`.mcpb`), built with `npm run mcpb`.
+It runs four ways:
+
+- **`reddit-cli`**, a command-line tool.
+- **An MCP server**, `reddit-api-mcp`, over stdio for Claude Desktop and Claude Code, or over HTTP behind a bearer token.
+- **A Docker image** for the HTTP server.
+- **A Claude Desktop extension** (`.mcpb`), built with `npm run mcpb`.
 
 The feature set is ported from [jordanburke/reddit-mcp-server](https://github.com/jordanburke/reddit-mcp-server), [karanb192/reddit-mcp-buddy](https://github.com/karanb192/reddit-mcp-buddy), and [adhikasp/mcp-reddit](https://github.com/adhikasp/mcp-reddit). See [NOTICE.md](NOTICE.md).
 
-## Setup
+> **Status.** The code is tested offline (104 tests), and the Docker image and the extension bundle were built and checked locally. It has **not** been run against Reddit's live API yet, because it needs a Reddit app. See [Status and limits](#status-and-limits).
 
-1. Create a Reddit app at `https://old.reddit.com/prefs/apps/`, or ask Reddit's Developer Support if self-service is closed for your account. Use an **installed app** for the default `oauth` mode, which has no secret. Use a **script** app for `password` and `app` modes, which need the client secret. Set the redirect URI to `http://localhost:8080`.
-2. Put the client ID (and the secret, for script apps) into your environment.
-3. Pick an auth mode (below). Then run `node src/cli.js test` to check the configuration end to end.
+## Quick start
 
-Requires Node 22.12 or newer.
+1. **Get a Reddit app and its credentials.** Follow [docs/credentials.md](docs/credentials.md). It has every step, every link, and what to do when self-service app creation is closed.
+2. **Install.** Requires Node 22.12 or newer.
+   ```
+   npm install
+   cp .env.example .env          # on Windows: copy .env.example .env
+   ```
+3. **Fill in `.env`.** At minimum `REDDIT_CLIENT_ID` and `REDDIT_USERNAME`. See [docs/configuration.md](docs/configuration.md).
+4. **Log in** (default `oauth` mode). Approve in the browser and paste the address back:
+   ```
+   node --env-file-if-exists=.env src/cli.js login
+   ```
+5. **Check it works:**
+   ```
+   node --env-file-if-exists=.env src/cli.js test
+   node --env-file-if-exists=.env src/cli.js whoami
+   ```
+6. **Try a write safely.** Preview first, then send it to a community you own:
+   ```
+   node --env-file-if-exists=.env src/cli.js post YOUR_TEST_SUB --title "Hello" --text "A test" --dry-run
+   ```
 
-## Auth modes
+## Documentation
 
-| Mode | Set | Stores | Can write |
-|---|---|---|---|
-| `oauth` (default) | `REDDIT_CLIENT_ID`, `REDDIT_USERNAME`, then `reddit-cli login` | The refresh token in the OS keychain, or `REDDIT_REFRESH_TOKEN` if you set it | Yes |
-| `password` | `REDDIT_AUTH_MODE=password`, `REDDIT_CLIENT_SECRET`, `REDDIT_PASSWORD` | Nothing | Yes |
-| `app` | `REDDIT_AUTH_MODE=app`, `REDDIT_CLIENT_SECRET` | Nothing | No (read-only, public data) |
+| Document | What's in it |
+|---|---|
+| [docs/credentials.md](docs/credentials.md) | Every step to get a Reddit app, its client ID and secret, and access to the API, with links |
+| [docs/configuration.md](docs/configuration.md) | Every setting, the three auth modes, safety modes, and `.env` |
+| [docs/cli.md](docs/cli.md) | Every command, its options, and examples |
+| [docs/mcp.md](docs/mcp.md) | Connecting Claude Desktop, Claude Code, and HTTP clients, plus the tool reference (all 32 tools) |
+| [docs/extension.md](docs/extension.md) | Building and installing the Claude Desktop extension |
+| [docs/deployment.md](docs/deployment.md) | Docker and HTTP deployment |
+| [docs/how-it-works.md](docs/how-it-works.md) | Architecture: OAuth flows, rate limits, caching, the write guard, scopes, and storage |
+| [docs/security.md](docs/security.md) | What is sensitive, where it lives, the threats, and the controls |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Error messages and what to do about them |
+| [docs/development.md](docs/development.md) | Repository layout, tests, scripts, and how to add a tool |
 
-**Password mode is a real security trade-off.** Your Reddit password sits in an environment variable for as long as the process runs. Anything that can read the environment can read it. Prefer `oauth`, which never holds your password. With two-factor on, put `:CODE` after the password.
+## What it does
 
-## Environment
+**Reading** (no writes):
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `REDDIT_CLIENT_ID` | required | Your Reddit app's client ID |
-| `REDDIT_USERNAME` | required | Your Reddit username (used in the User-Agent) |
-| `REDDIT_CLIENT_SECRET` | empty | Required for `password` and `app`, and for script and web apps |
-| `REDDIT_AUTH_MODE` | `oauth` | `oauth`, `password`, or `app` |
-| `REDDIT_PASSWORD` | empty | Required for `password` |
-| `REDDIT_REFRESH_TOKEN` | empty | An OAuth refresh token supplied directly (nothing is stored) |
-| `REDDIT_REDIRECT_URI` | `http://localhost:8080` | Must match the app's redirect URI |
-| `REDDIT_SCOPES` | the nine scopes below | Overrides the requested scopes; a change needs a new login |
-| `REDDIT_USER_AGENT` | `node:reddit-cli:<version> (by /u/<username>)` | Overrides the User-Agent |
-| `REDDIT_CLI_SAFE_MODE` | `standard` | `standard` (2 s between writes, 30 writes an hour) or `strict` (5 s, 10 an hour) |
-| `REDDIT_CLI_MAX_WRITES_PER_HOUR` | per mode | Overrides the hourly cap |
-| `REDDIT_CLI_BOT_FOOTER` | off | `auto` adds a bot disclosure to posts, comments, and edits; any other text is used as the footer |
-| `REDDIT_CLI_CACHE` | `on` | `off` sends every read to Reddit |
-| `REDDIT_CLI_MAX_RETRIES` | `3` | Retries on throttling responses |
-| `REDDIT_CLI_HOME` | `~/.reddit-cli` | Where the write log lives |
-| `REDDIT_MCP_TOKEN` | required for HTTP | Bearer token for HTTP mode |
-| `REDDIT_MCP_HOST` / `REDDIT_MCP_PORT` | `127.0.0.1` / `3000` | HTTP bind address and port |
+- Feeds in any sort (`hot`, `new`, `top`, `rising`, `controversial`), with paging and optional subreddit details.
+- Subreddit info, rules, post flairs, and Reddit's popular subreddits.
+- Search across Reddit or inside a subreddit, filtered by author or flair.
+- A post with its full comment tree, and "load more" expansion for collapsed branches. Accepts a post ID, a fullname, or a reddit.com link.
+- A user's karma and account details, their posts and comments, and a summary of where they are active.
+- Your own overview, your saved items, and the subreddits you have joined.
+- A public RSS fallback that needs no Reddit app (read-only, no scores).
+- A glossary of Reddit terms (karma, AMA, ELI5, and more). Works offline.
 
-A setting left as an unfilled template, such as `${user_config.refresh_token}`, counts as empty.
+**Writing** (every write is guarded):
 
-## Command line
+- Create text or link posts; reply to posts and comments; edit and delete your own posts and comments.
+- Vote (up, down, or clear), join and leave subreddits, save and unsave.
+- Confirmation before each write, `--dry-run` for previews, 2 seconds between writes (5 in strict mode), an hourly cap (30, or 10 in strict mode), and a 24-hour block on identical text.
+- An optional bot disclosure footer on posts, comments, and edits.
 
-```
-reddit-cli login                      # oauth mode: approve in the browser, paste the address back
-reddit-cli token                      # print the stored refresh token (for the Claude Desktop extension)
-reddit-cli test                       # check the configuration end to end
-reddit-cli whoami
-reddit-cli feed node --sort top --time week --limit 5 --info
-reddit-cli search "rust async" --subreddit rust --author alice
-reddit-cli thread https://www.reddit.com/r/node/comments/abc123/
-reddit-cli user alice                 # karma and account details
-reddit-cli activity alice             # karma plus where they are active
-reddit-cli explain karma
-reddit-cli post node --title "Hello" --text "First post" --dry-run
-reddit-cli comment t3_abc123 --text "Nice"
-reddit-cli edit t1_abc123 --text "Corrected"
-reddit-cli delete t1_abc123
-reddit-cli vote t3_abc123 up
-reddit-cli subscribe node
-reddit-cli scopes                     # every scope, what login requests, and why the rest are left out
-reddit-cli rss node                   # public feed, no login (read-only)
-reddit-cli api GET /api/v1/me         # any GET or POST endpoint
-```
+**Connecting to Claude:** 32 MCP tools, 21 read and 11 write. Each write needs `confirm: true`. See [docs/mcp.md](docs/mcp.md).
 
-Every write asks for confirmation unless you pass `--yes`, and `--dry-run` prints the request without sending it.
+**Least privilege:** login requests nine scopes, each tied to a feature. `reddit-cli scopes` shows all of Reddit's scopes this project knows about, with the reason each one is left out. See [docs/security.md](docs/security.md).
 
-## MCP server
+## Auth modes at a glance
 
-Claude Desktop or Claude Code, over stdio:
+| Mode | You need | Stores | Can write | Best for |
+|---|---|---|---|---|
+| `oauth` (default) | A **installed** app's client ID, and a one-time browser login | A refresh token, in the OS keychain | Yes | Almost everyone |
+| `password` | A **script** app's client ID and secret, plus your password | Nothing (the password comes from the environment) | Yes | Setups where a browser login is impossible. Carries a real risk, see [docs/security.md](docs/security.md) |
+| `app` | A **script** or **web** app's client ID and secret | Nothing | No (read-only, public data) | Read-only use |
 
-```json
-{
-  "mcpServers": {
-    "reddit": {
-      "command": "node",
-      "args": ["/absolute/path/to/reddit-api-mcp/src/mcp.js"],
-      "env": {
-        "REDDIT_AUTH_MODE": "oauth",
-        "REDDIT_CLIENT_ID": "your-client-id",
-        "REDDIT_USERNAME": "your-username"
-      }
-    }
-  }
-}
-```
+Details: [docs/configuration.md](docs/configuration.md#auth-modes) and [docs/how-it-works.md](docs/how-it-works.md#oauth-flows).
 
-Over HTTP:
+## Status and limits
 
-```
-node src/mcp.js --generate-token     # prints a token; keep it secret
-REDDIT_MCP_TOKEN=<token> npm run mcp:http
-```
+- **Tested offline:** 104 tests. They use a fake `fetch`, a spawned stdio server, and a real HTTP server on an ephemeral port.
+- **Not tested live:** nothing has been run against Reddit yet. The request shapes follow [PRAW](https://github.com/praw-dev/praw) and the other projects' code. Verify each capability on your own account before relying on it.
+- **Docker:** the image builds, and the HTTP endpoint was checked in a running container (401 without the token, a successful `initialize` with it).
+- **Extension:** builds on Windows, validates, unpacks, and serves its 32 tools over stdio. It has not been installed in Claude Desktop, and it is not signed.
+- **Platform:** the keychain library is native, so an extension bundle works only on the operating system it was built on.
+- **Scope changes** need a new login.
+- **Not supported:** moderation tools, direct messages, reports, Reddit chat, and Reddit Answers.
+- **Reddit's API policy is changing.** Read [docs/credentials.md](docs/credentials.md#reddits-api-policy) before you build on it.
 
-The endpoint is `http://127.0.0.1:3000/mcp`. Every request needs `Authorization: Bearer <token>`. It binds to localhost unless you set `REDDIT_MCP_HOST`, and anyone who can reach it can act on the account.
+## License and credits
 
-There are 32 tools: 21 reads (`browse_subreddit`, `search_reddit`, `get_reddit_post`, `get_post_comments`, `user_analysis`, `reddit_explain`, `test_reddit_mcp_server`, and more) and 11 writes. Every write needs `confirm: true`. The raw `api` escape hatch is CLI-only.
-
-## Docker
-
-```
-docker build -t reddit-api-mcp .
-docker compose up -d                  # listens on 127.0.0.1:3000
-```
-
-The container has no OS keychain, so use `password` or `app` mode, or `oauth` with `REDDIT_REFRESH_TOKEN`.
-
-## Claude Desktop extension
-
-```
-npm run mcpb                          # writes dist/reddit-api-mcp.mcpb
-```
-
-Open the `.mcpb` file with Claude Desktop, or drag it onto the app, and fill in the settings it asks for. Claude Desktop stores the sensitive ones; they are not in the file. For `oauth` mode, run `node src/cli.js login` and then `node src/cli.js token` in this repo, and paste the token into **Refresh token**.
-
-The extension runs on your machine on purpose: your credentials stay local instead of on a hosted server. The keychain binding is native, so build the bundle on each operating system you use. The bundle is not signed. Node 22.12 or newer is required.
-
-## Scopes
-
-Login requests nine scopes: `identity`, `read`, `history`, `mysubreddits`, `subscribe`, `vote`, `submit`, `edit`, `save`. Each one is needed by a feature. `reddit-cli scopes` lists the rest and says why they are left out.
-
-## Development
-
-```
-npm test                 # offline: a fake fetch, a spawned MCP server, and a real HTTP server
-npm run rate-limit       # sends a few live reads and prints Reddit's rate-limit headers
-npm run mcpb             # builds the Claude Desktop extension bundle
-```
-
-## License
-
-The project's code is written from scratch. The feature set and endpoint choices are credited in [NOTICE.md](NOTICE.md).
+The code in this repository is written from scratch. The feature set, endpoint choices, and several behaviors are credited in [NOTICE.md](NOTICE.md).

@@ -35,13 +35,13 @@ The repository is `FiredMosquito831/reddit-api-mcp` on GitHub, private at creati
 
 ## Auth modes
 
-- `oauth`: installed-app authorization-code flow. The authorize URL carries `duration=permanent`, and the `state` is checked. The refresh token goes to the OS keychain, or comes from `REDDIT_REFRESH_TOKEN`. The password is never stored.
+- `oauth`: installed-app authorization-code flow. The authorize URL carries `duration=permanent`, and the `state` is checked. The refresh token goes to the OS keychain, or comes from `REDDIT_REFRESH_TOKEN`. Reddit may issue a new refresh token on each refresh, so the newest one is kept for the process, and the keychain copy is updated; an environment token is never written. `logout` revokes whichever token is in use. The password is never stored.
 - `password`: script-app password grant. The password is read from the environment on every token request and is never stored by this project. This is an opt-in trade-off, documented in the README.
 - `app`: client-credentials grant. Read-only public data. The session refuses writes before anything is sent.
 
 ## Status
 
-- 100 offline tests pass. Live behavior is unverified because there is no Reddit client ID yet.
+- 104 offline tests pass. Live behavior is unverified because there is no Reddit client ID yet.
 - Docker image builds. The HTTP endpoint was smoke-tested in the container: `initialize` with the token succeeds, a request without it gets a 401, and `tools/list` answers.
 - The MCPB bundle builds (win32 here), validates, unpacks, and lists 32 tools over stdio with no raw `api` tool. It has not been installed in Claude Desktop, and it is not signed.
 - Endpoint paths and form fields were cross-checked against PRAW's `praw/endpoints.py` and call sites, and the read endpoints against jordanburke's code. reddit.com is unreachable from the dev tooling, so nothing was checked against Reddit's live reference.
@@ -82,6 +82,16 @@ The repository is `FiredMosquito831/reddit-api-mcp` on GitHub, private at creati
 - No moderation, no direct messages, and no reports. Those would need scopes this project does not request.
 - The HTTP server requires a bearer token and binds to localhost by default. The Claude Desktop extension runs locally so credentials stay on the user's machine.
 - Don't use Reddit content for model training, and don't keep content users have deleted.
+
+## Documentation
+
+- `README.md`: the overview and quick start.
+- `docs/credentials.md`: every step to get a Reddit app and access, with links.
+- `docs/configuration.md`: every setting, the auth modes, and `.env`.
+- `docs/cli.md` and `docs/mcp.md`: the command and tool references. The tool table is generated from the running server, and must match `src/mcp-server.js`.
+- `docs/extension.md`, `docs/deployment.md`: the extension and the HTTP/Docker setup.
+- `docs/how-it-works.md`, `docs/security.md`, `docs/troubleshooting.md`, `docs/development.md`.
+- `.env.example` lists every setting without values. Load a `.env` with `node --env-file-if-exists=.env`.
 
 ## Git and GitHub
 
