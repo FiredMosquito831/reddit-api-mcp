@@ -1,0 +1,16 @@
+services:
+  reddit-api-mcp:
+    build: .
+    image: reddit-api-mcp
+    ports:
+      # Bound to localhost on purpose. Anyone who can reach this port can act on the account.
+      - "127.0.0.1:3000:3000"
+    environment:
+      REDDIT_AUTH_MODE: ${REDDIT_AUTH_MODE:-app}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:?set REDDIT_CLIENT_ID}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
+      REDDIT_USERNAME: ${REDDIT_USERNAME:?set REDDIT_USERNAME}
+      REDDIT_PASSWORD: ${REDDIT_PASSWORD:-}
+      REDDIT_REFRESH_TOKEN: ${REDDIT_REFRESH_TOKEN:-}
+      REDDIT_MCP_TOKEN: ${REDDIT_MCP_TOKEN:?set REDDIT_MCP_TOKEN}
+    restart: unless-stopped
