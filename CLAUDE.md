@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `reddit-api-mcp`: a Node.js client for Reddit that acts for the user's own account, in four forms: a command-line tool (`src/cli.js`), an MCP server over stdio or Streamable HTTP (`src/mcp.js`), a Docker image for the HTTP server, and a Claude Desktop extension (`.mcpb`). The feature set is ported from jordanburke/reddit-mcp-server, karanb192/reddit-mcp-buddy, and adhikasp/mcp-reddit (credited in `NOTICE.md`). It is plain JavaScript (ES modules), not TypeScript.
 
-The repository is `FiredMosquito831/reddit-api-mcp` on GitHub, private at creation.
+The repository is `FiredMosquito831/reddit-api-mcp` on GitHub. It was created private and made public on 2026-10-20.
 
 ## Commands
 
@@ -97,7 +97,7 @@ The repository is `FiredMosquito831/reddit-api-mcp` on GitHub, private at creati
 
 - The repository has a git history. Commit messages end with the line `by FiredMosquito831`.
 - `.gitignore` excludes `node_modules/`, `.remember/` (plugin state), `.env`, `*.log`, and `dist/`.
-- The GitHub repository was created with the `gh` CLI as private. Publishing it is a separate decision.
+- The GitHub repository is public. It was created private with the `gh` CLI and made public on 2026-10-20, by the owner's decision.
 
 ## Open questions
 

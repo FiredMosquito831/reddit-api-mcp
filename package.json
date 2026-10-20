@@ -18,7 +18,7 @@
     "rate-limit": "node scripts/rate-limit-check.js",
     "mcpb": "node scripts/build-mcpb.js"
   },
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@napi-rs/keyring": "^2.1.2",

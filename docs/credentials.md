@@ -26,9 +26,10 @@ Every action the tool takes is done as one Reddit account. Choose it deliberatel
 Reddit's app page is at **[old.reddit.com/prefs/apps](https://old.reddit.com/prefs/apps/)** (the same page is also at [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps)). Signed in, scroll to the bottom and look for **"create another app..."**.
 
 - **If the form opens**, go to Step 3.
-- **If there is no button, the button does nothing, or it sends you to a policy page**, self-service creation is closed for your account. Go to Step 5.
+- **If there is no button, or it sends you to a policy page**, self-service creation is probably closed for your account. Go to Step 5.
+- **If the form opens and create app still does nothing after you complete the check** (Step 3), self-service is closed for your account. Go to Step 5.
 
-Reports from late 2025 and 2026 say new self-service apps are restricted. The older documentation, such as [PRAW's authentication guide](https://praw.readthedocs.io/en/latest/getting_started/authentication.html), still describes the self-service path.
+The sources disagree. The [jordanburke/reddit-mcp-server README](https://github.com/jordanburke/reddit-mcp-server) says Reddit closed self-service app creation in November 2025, and sends new developers to the Developer Support form in Step 5. The [karanb192/reddit-mcp-buddy README](https://github.com/karanb192/reddit-mcp-buddy) and [PRAW's authentication guide](https://praw.readthedocs.io/en/latest/getting_started/authentication.html) still describe the self-service path. None of these is a Reddit source, so treat them as reports.
 
 ## Step 3: Create the app
 
@@ -50,7 +51,11 @@ Choose the app type by mode:
 | **script app** | Yes | `password` and `app` modes, and `oauth` too | Its card says "personal use script". |
 | **web app** | Yes | `oauth` mode | Works, but is meant for hosted web apps. |
 
-Click **create app**.
+Complete the **I'm not a robot** check first, and finish any puzzle Reddit shows. If you click **create app** with the box unticked, the same form stays on screen with no error message.
+
+Clicking **create app** also agrees to Reddit's Developer Terms and Data API Terms, which the form links at the top. Read them first.
+
+Click **create app** once the check passes. If it still does not create the app, self-service is probably closed for your account. Go to Step 5.
 
 ## Step 4: Copy the client ID and secret
 
@@ -72,7 +77,7 @@ When self-service is closed, or when you need to ask Reddit for something it doe
    - [Developer Platform & Accessing Reddit Data](https://support.reddithelp.com/hc/en-us/articles/14945211791892-Developer-Platform-Accessing-Reddit-Data).
    - [Reddit Data API Wiki](https://support.reddithelp.com/hc/en-us/articles/16160319875092-Reddit-Data-API-Wiki).
 2. **Open the request form:** [Developer Support request](https://support.reddithelp.com/hc/en-us/requests/new?ticket_form_id=14868593862164).
-3. **Choose the individual or developer option** in the request-type list. Do not choose Enterprise or Research. I could not see the exact labels.
+3. **Choose the options Reddit names.** Select "I'm a Developer", then "I want to register to use the Reddit API." The [Reddit API wiki](https://www.reddit.com/r/reddit.com/wiki/api/) gives those labels, but it also ties the request to "a valid moderation use case". This project does no moderation, so read that page before you submit. The request may be declined.
 4. **Describe the use.** Adapt this draft. It is accurate for this project, and it matches what the software does:
 
    > I'm a developer building a personal, non-commercial command-line tool and MCP server for my own Reddit account. It uses OAuth with a browser login, so no password is stored. Each command performs one action I request: reading feeds, searches, threads, and user profiles; joining or leaving named subreddits; posting or commenting when I ask; editing or deleting my own content; and voting or saving named items. It does not scrape pages, use private endpoints, run bulk or automated voting, moderate, send direct messages, train models on Reddit data, or keep deleted content. It sends a descriptive User-Agent, respects rate limits, and enforces its own spacing and hourly caps. Installed-app redirect URI: http://localhost:8080. Reddit account: u/YOUR_USERNAME.
@@ -93,7 +98,7 @@ Make your first writes in a community you own, not in someone else's. Create one
 ## Step 7: Get the software
 
 1. Install Node.js 22.12 or newer: [nodejs.org](https://nodejs.org/).
-2. Install Git, then clone the repository: [github.com/FiredMosquito831/reddit-api-mcp](https://github.com/FiredMosquito831/reddit-api-mcp). It is private, so sign in to GitHub with an account that has access.
+2. Install Git, then clone the repository: [github.com/FiredMosquito831/reddit-api-mcp](https://github.com/FiredMosquito831/reddit-api-mcp). It is public, so you can clone it without signing in.
 3. In the project folder:
    ```
    npm install

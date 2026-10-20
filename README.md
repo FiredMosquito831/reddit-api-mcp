@@ -100,4 +100,6 @@ Details: [docs/configuration.md](docs/configuration.md#auth-modes) and [docs/how
 
 ## License and credits
 
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+
 The code in this repository is written from scratch. The feature set, endpoint choices, and several behaviors are credited in [NOTICE.md](NOTICE.md).

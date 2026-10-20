@@ -106,4 +106,4 @@ The scopes requested are `identity`, `read`, `history`, `mysubreddits`, `subscri
 
 ## Reporting a problem
 
-This repository is private, so report security problems to the repository owner directly. Do not put secrets, tokens, or passwords in the report.
+This repository is public. Report security problems to the repository owner privately, not in a public issue. Do not put secrets, tokens, or passwords in the report.
