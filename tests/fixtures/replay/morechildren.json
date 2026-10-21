@@ -1,0 +1,11 @@
+{
+  "json": {
+    "errors": [],
+    "data": {
+      "things": [
+        { "kind": "t1", "data": { "name": "t1_more1", "author": "ann", "body": "loaded", "score": 1, "parent_id": "t3_abc" } },
+        { "kind": "t1", "data": { "name": "t1_more2", "author": "ben", "body": "loaded too", "score": 2, "parent_id": "t1_c1" } }
+      ]
+    }
+  }
+}

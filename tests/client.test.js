@@ -93,15 +93,18 @@ test('a wait longer than a minute is reported to the caller instead of slept thr
   assert.deepEqual(clock.sleeps, []);
 });
 
-test('a RATELIMIT error inside a 200 response is retried after a short wait', async () => {
+test('a RATELIMIT error inside a 200 mutation response is known and is not retried', async () => {
   const throttled = {
     json: { errors: [['RATELIMIT', "You're doing that too much. Try again in 30 seconds.", 'ratelimit']] },
   };
   const accepted = { json: { errors: [], data: { ok: true } } };
-  const { client, clock } = makeClient({ route: router([jsonResponse(throttled), jsonResponse(accepted)]) });
-  const result = await client.request('POST', '/api/vote/', { form: { id: 't3_a', dir: '1' } });
-  assert.deepEqual(result, accepted);
-  assert.ok(clock.sleeps.includes(30_000));
+  const { client, calls, clock } = makeClient({ route: router([jsonResponse(throttled), jsonResponse(accepted)]) });
+  await assert.rejects(
+    client.request('POST', '/api/vote/', { form: { id: 't3_a', dir: '1' } }),
+    (error) => error instanceof RedditError && error.outcome === 'FAILED_KNOWN',
+  );
+  assert.deepEqual(clock.sleeps, []);
+  assert.equal(calls.filter((call) => call.url.startsWith(API)).length, 1);
 });
 
 test('parseWaitMs understands seconds, minutes, and hours', () => {
@@ -125,5 +128,23 @@ test('the client waits for the one-minute window to slide once the cap is reache
 test('paths must start with a single slash, and nothing is sent when they do not', async () => {
   const { client, calls } = makeClient();
   await assert.rejects(client.request('GET', '//evil.example/x'), /single slash/);
+  assert.equal(calls.length, 0);
+});
+
+test('a path that resolves to another host is refused before the token is sent', async () => {
+  const { client, calls } = makeClient();
+  // WHATWG URL treats a backslash as a slash, so `/\host` becomes `//host` and would carry the
+  // bearer token to that host.
+  for (const path of ['/\\evil.example/api/v1/me', '/\\/evil.example/api/v1/me', '/\tevil.example/x']) {
+    await assert.rejects(
+      client.request('GET', path),
+      (error) => error instanceof RedditError && /single slash|same host|origin/i.test(error.message),
+      `expected ${JSON.stringify(path)} to be refused`,
+    );
+  }
+  await assert.rejects(
+    client.request('POST', '/\\evil.example/api/vote/', { form: { id: 't3_a', dir: '1' } }),
+    (error) => error instanceof RedditError && error.outcome === 'FAILED_KNOWN',
+  );
   assert.equal(calls.length, 0);
 });

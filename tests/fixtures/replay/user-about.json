@@ -1,0 +1,14 @@
+{
+  "kind": "t2",
+  "data": {
+    "name": "alice",
+    "id": "abc123",
+    "link_karma": 12,
+    "comment_karma": 34,
+    "total_karma": 46,
+    "is_mod": false,
+    "is_gold": true,
+    "is_employee": false,
+    "created_utc": 1500000000
+  }
+}

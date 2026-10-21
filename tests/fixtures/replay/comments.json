@@ -1,0 +1,59 @@
+[
+  {
+    "kind": "Listing",
+    "data": {
+      "children": [
+        {
+          "kind": "t3",
+          "data": {
+            "name": "t3_abc",
+            "title": "Hello",
+            "author": "bob",
+            "subreddit": "node",
+            "score": 9,
+            "num_comments": 2,
+            "url": "https://example.com",
+            "permalink": "/r/node/comments/abc/hello/",
+            "selftext": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "Listing",
+    "data": {
+      "children": [
+        {
+          "kind": "t1",
+          "data": {
+            "name": "t1_c1",
+            "author": "ann",
+            "body": "top level",
+            "score": 3,
+            "parent_id": "t3_abc",
+            "replies": {
+              "data": {
+                "children": [
+                  {
+                    "kind": "t1",
+                    "data": {
+                      "name": "t1_c2",
+                      "author": "ben",
+                      "body": "reply",
+                      "score": 1,
+                      "parent_id": "t1_c1",
+                      "replies": ""
+                    }
+                  },
+                  { "kind": "more", "data": { "children": ["x1", "x2"] } }
+                ]
+              }
+            }
+          }
+        },
+        { "kind": "more", "data": { "children": ["y1"] } }
+      ]
+    }
+  }
+]

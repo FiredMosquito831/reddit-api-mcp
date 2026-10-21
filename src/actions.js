@@ -1,62 +1,27 @@
-import { RedditError } from './client.js';
+import { API_BASE, RedditError } from './client.js';
+import { OperationError, OUTCOMES } from './errors.js';
 import { lookupTerm } from './glossary.js';
+import {
+  COMMENT_FULLNAME_RE,
+  COMMENT_SORTS,
+  LISTING_SORTS,
+  POST_FULLNAME_RE,
+  POST_OR_COMMENT_RE,
+  SEARCH_SORTS,
+  SEARCH_TYPES,
+  SORTS,
+  TIME_RANGES,
+  VOTE_DIRECTIONS,
+  bareId,
+  checkFullname,
+  checkLimit,
+  checkOneOf,
+  checkSubreddit,
+  checkUsername,
+  parsePostRef,
+} from './validation.js';
 
-const SUBREDDIT_RE = /^[A-Za-z0-9_]{2,21}$/;
-const USERNAME_RE = /^[A-Za-z0-9_-]{3,20}$/;
-const FULLNAME_RE = /^t[1-6]_[a-z0-9]+$/i;
-const POST_FULLNAME_RE = /^t3_[a-z0-9]+$/i;
-const COMMENT_FULLNAME_RE = /^t1_[a-z0-9]+$/i;
-const POST_OR_COMMENT_RE = /^t[13]_[a-z0-9]+$/i;
-const SORTS = ['hot', 'new', 'top', 'rising', 'controversial'];
-const LISTING_SORTS = ['hot', 'new', 'top', 'controversial'];
-const COMMENT_SORTS = ['confidence', 'top', 'new', 'controversial', 'old', 'qa'];
-const SEARCH_SORTS = ['relevance', 'hot', 'top', 'new', 'comments'];
-const SEARCH_TYPES = ['link', 'sr', 'user'];
-const TIME_RANGES = ['hour', 'day', 'week', 'month', 'year', 'all'];
-const VOTE_DIRECTIONS = { up: 1, down: -1, clear: 0 };
-
-function checkSubreddit(name) {
-  if (!SUBREDDIT_RE.test(name ?? '')) throw new Error(`Not a valid subreddit name: ${name}`);
-  return name;
-}
-
-function checkUsername(name) {
-  if (!USERNAME_RE.test(name ?? '')) throw new Error(`Not a valid Reddit username: ${name}`);
-  return name;
-}
-
-function checkFullname(value, pattern = FULLNAME_RE) {
-  if (!pattern.test(value ?? '')) throw new Error(`Expected a Reddit fullname such as t3_abc123, got: ${value}`);
-  return value;
-}
-
-function checkOneOf(value, allowed, label) {
-  if (!allowed.includes(value)) throw new Error(`${label} must be one of: ${allowed.join(', ')}`);
-  return value;
-}
-
-function checkLimit(limit, max = 100) {
-  if (!Number.isInteger(limit) || limit < 1 || limit > max) throw new Error(`Limit must be between 1 and ${max}.`);
-  return limit;
-}
-
-// Accepts "t3_abc123", "t1_abc123", or a bare id such as "abc123".
-function bareId(value) {
-  const id = String(value ?? '').replace(/^t[0-9]_/i, '');
-  if (!/^[a-z0-9]+$/i.test(id)) throw new Error(`Not a valid Reddit id: ${value}`);
-  return id;
-}
-
-// Post links as people paste them: reddit.com (and old., new., np., m.) and redd.it short links, which
-// carry only the id. Returns null for anything else.
-export function parsePostRef(value) {
-  const text = String(value ?? '').trim();
-  const link = /reddit\.com\/r\/([A-Za-z0-9_]+)\/comments\/([a-z0-9]+)/i.exec(text);
-  if (link) return { subreddit: link[1], id: link[2].toLowerCase() };
-  const short = /redd\.it\/([a-z0-9]+)/i.exec(text);
-  if (short) return { subreddit: undefined, id: short[1].toLowerCase() };
-  return null;
-}
+export { parsePostRef };
 
 function withFooter(text, footer) {
   return footer ? `${text}${footer}` : text;
@@ -141,9 +106,248 @@ function parseCommentTree(children, depth = 0) {
   return { comments, moreIds };
 }
 
+// ---- Mutation plans -------------------------------------------------------------------------------
+//
+// A plan is the exact request one action sends, with no network access. It is shared by the legacy
+// guarded actions and by the API backend, so a validated operation and a direct CLI call can never
+// drift into different paths or forms. `legacy(response)` returns what the old action returned.
+// `complete(response)` is the new-backend completion contract: it fails closed as OUTCOME_UNKNOWN
+// unless the response itself proves the documented state. This is why an empty `{}` succeeds only for
+// endpoints whose documented success body is empty, never as a generic fallback.
+
+function unknownCompletion(action) {
+  return new RedditError(
+    `Reddit's completion response for the ${action} could not be confirmed, so its outcome is unknown. It will not be resent automatically.`,
+    { outcome: OUTCOMES.OUTCOME_UNKNOWN },
+  );
+}
+
+function responseErrors(response) {
+  return Array.isArray(response?.json?.errors) ? response.json.errors : [];
+}
+
+function assertNoRefusal(response, action) {
+  const errors = responseErrors(response);
+  if (errors.length === 0) return;
+  const [code, message] = errors[0];
+  if (code === 'RATELIMIT') {
+    throw new RedditError('Reddit is throttling this account. Nothing was sent.', {
+      outcome: OUTCOMES.FAILED_KNOWN,
+      details: errors,
+    });
+  }
+  throw new RedditError(`Reddit refused the request (${code}): ${message ?? 'no details given'}`, {
+    outcome: OUTCOMES.FAILED_KNOWN,
+    details: errors,
+  });
+}
+
+// An empty documented body is success for this operation; anything unparseable is not.
+function emptyCompletion(response, action) {
+  assertNoRefusal(response, action);
+  if (response === null || response === undefined) return {};
+  if (typeof response !== 'object' || Array.isArray(response)) throw unknownCompletion(action);
+  return response;
+}
+
+// Evidence must be a non-empty identifier: a 200 with `name: ''` does not prove the write landed.
+function hasEvidence(data) {
+  if (!data || typeof data !== 'object') return false;
+  const present = (value) => typeof value === 'string' && value.trim() !== '';
+  return present(data.id) || present(data.name);
+}
+
+// Submit: Reddit answers with json.data carrying the new thing's id/name. Without either, the write
+// may have landed, but this response does not prove it.
+function submitCompletion(response) {
+  assertNoRefusal(response, 'post');
+  const data = response?.json?.data;
+  if (!hasEvidence(data)) throw unknownCompletion('post');
+  return data;
+}
+
+// Comment and edit: json.data.things must contain the affected thing.
+function thingCompletion(response, action) {
+  assertNoRefusal(response, action);
+  const data = response?.json?.data;
+  const things = data?.things;
+  if (!Array.isArray(things) || things.length === 0) throw unknownCompletion(action);
+  if (!hasEvidence(things[0]?.data)) throw unknownCompletion(action);
+  return data;
+}
+
+function legacyUnwrap(response) {
+  const errors = responseErrors(response);
+  if (errors.length > 0) {
+    const [code, message] = errors[0];
+    throw new RedditError(`Reddit refused the request (${code}): ${message ?? 'no details given'}`, { details: errors });
+  }
+  return response?.json?.data ?? response ?? {};
+}
+
+export function planMutation(action, args = {}, { footer = '' } = {}) {
+  if (args === null || typeof args !== 'object' || Array.isArray(args)) {
+    throw new TypeError('Write arguments must be an object.');
+  }
+  switch (action) {
+    case 'submitPost': {
+      const { subreddit, title, text, url } = args;
+      checkSubreddit(subreddit);
+      if (!title?.trim()) throw new Error('A title is required.');
+      if ((text === undefined) === (url === undefined)) throw new Error('Give exactly one of --text or --url.');
+      const form = url === undefined
+        ? { api_type: 'json', sr: subreddit, kind: 'self', title, text: withFooter(text, footer) }
+        : { api_type: 'json', sr: subreddit, kind: 'link', title, url };
+      return Object.freeze({
+        method: 'POST',
+        path: '/api/submit/',
+        form: Object.freeze(form),
+        text: [title, text ?? url].join('\n'),
+        complete: submitCompletion,
+        legacy: legacyUnwrap,
+      });
+    }
+    case 'comment': {
+      const { parent, text } = args;
+      checkFullname(parent, POST_OR_COMMENT_RE);
+      if (!text?.trim()) throw new Error('Comment text is required.');
+      return Object.freeze({
+        method: 'POST',
+        path: '/api/comment/',
+        form: Object.freeze({ api_type: 'json', thing_id: parent, text: withFooter(text, footer) }),
+        text,
+        complete: (response) => thingCompletion(response, 'comment'),
+        legacy: legacyUnwrap,
+      });
+    }
+    case 'editText': {
+      const { fullname, text, kind } = args;
+      checkFullname(fullname, kind === 't3' ? POST_FULLNAME_RE : kind === 't1' ? COMMENT_FULLNAME_RE : POST_OR_COMMENT_RE);
+      if (!text?.trim()) throw new Error('New text is required.');
+      return Object.freeze({
+        method: 'POST',
+        path: '/api/editusertext/',
+        form: Object.freeze({ api_type: 'json', thing_id: fullname, text: withFooter(text, footer) }),
+        text,
+        complete: (response) => thingCompletion(response, 'edit'),
+        legacy: legacyUnwrap,
+      });
+    }
+    case 'deleteThing': {
+      const { fullname, kind } = args;
+      checkFullname(fullname, kind === 't3' ? POST_FULLNAME_RE : kind === 't1' ? COMMENT_FULLNAME_RE : POST_OR_COMMENT_RE);
+      return Object.freeze({
+        method: 'POST',
+        path: '/api/del/',
+        form: Object.freeze({ id: fullname }),
+        text: undefined,
+        complete: (response) => {
+          assertNoRefusal(response, 'delete');
+          return legacyUnwrap(response);
+        },
+        legacy: legacyUnwrap,
+      });
+    }
+    case 'vote': {
+      const { fullname, direction } = args;
+      checkFullname(fullname);
+      if (!Object.hasOwn(VOTE_DIRECTIONS, direction)) throw new Error('Direction must be up, down, or clear.');
+      return Object.freeze({
+        method: 'POST',
+        path: '/api/vote/',
+        form: Object.freeze({ id: fullname, dir: String(VOTE_DIRECTIONS[direction]) }),
+        text: undefined,
+        complete: (response) => emptyCompletion(response, 'vote'),
+        legacy: (response) => response,
+      });
+    }
+    case 'subscribe': {
+      const { subreddit, subscribe } = args;
+      checkSubreddit(subreddit);
+      return Object.freeze({
+        method: 'POST',
+        path: '/api/subscribe/',
+        form: Object.freeze({ action: subscribe ? 'sub' : 'unsub', sr_name: subreddit }),
+        text: undefined,
+        complete: (response) => emptyCompletion(response, 'subscription'),
+        legacy: (response) => response,
+      });
+    }
+    case 'save': {
+      const { fullname, undo = false } = args;
+      checkFullname(fullname);
+      return Object.freeze({
+        method: 'POST',
+        path: undo ? '/api/unsave/' : '/api/save/',
+        form: Object.freeze({ id: fullname }),
+        text: undefined,
+        complete: (response) => emptyCompletion(response, 'save'),
+        legacy: (response) => response,
+      });
+    }
+    default:
+      throw new OperationError('UNSUPPORTED_OPERATION', `No API mutation plan exists for action ${action}.`);
+  }
+}
+
+// Raw POST is API-only and has no per-operation response schema to verify. It keeps its own
+// `raw_post` policy/admission key so it cannot borrow a shipped tool's approval entry.
+//
+// The path is rejected here as well as in the client: `\` is a URL separator to WHATWG, so `/\host`
+// would otherwise resolve to another origin before the client's own check could see it.
+export function planRawMutation({ path, fields = {} } = {}) {
+  if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//')
+    || path.includes('\\') || /[\u0000-\u001f\u007f]/.test(path)) {
+    throw new OperationError('UNSUPPORTED_OPERATION', 'A raw API path must start with a single slash and stay on the API host.');
+  }
+  const url = new URL(path, API_BASE);
+  if (url.origin !== new URL(API_BASE).origin) {
+    throw new OperationError('UNSUPPORTED_OPERATION', 'A raw API path must start with a single slash and stay on the API host.');
+  }
+  if (fields === null || typeof fields !== 'object' || Array.isArray(fields)) {
+    throw new TypeError('Raw POST fields must be an object.');
+  }
+  return Object.freeze({
+    method: 'POST',
+    path,
+    form: Object.freeze({ ...fields }),
+    text: undefined,
+    complete: (response) => emptyCompletion(response, 'raw POST'),
+    legacy: (response) => response,
+  });
+}
+
 // Endpoint paths and form fields follow PRAW's endpoints.py and call sites. The listing and comment
 // calls follow jordanburke/reddit-mcp-server. `footer` is appended to every text this project writes.
-export function createActions({ client, guard, footer = '', authMode = 'oauth' }) {
+//
+// Writes run through exactly one admission adapter: the legacy `guard.run` (direct CLI use), or the
+// injected `writes.run` that a dispatcher binds to the shared durable boundary. Supplying both is a
+// programming error: nested guards would double-record, double-space, or double-dispatch.
+export function createActions({ client, guard, writes, footer = '', authMode = 'oauth' }) {
+  if (guard && writes) {
+    throw new TypeError('createActions accepts either the legacy guard or a writes adapter, never both.');
+  }
+  if (writes && (typeof writes.run !== 'function')) throw new TypeError('A writes adapter must expose run().');
+
+  // `perform` sends one prepared request; the adapter decides whether that send needs the legacy
+  // guard or the shared boundary. Nothing else in this module re-guards.
+  async function runPlan(plan, operation) {
+    const perform = async () => {
+      const response = await client.request('POST', plan.path, { form: plan.form });
+      return writes ? plan.complete(response) : plan.legacy(response);
+    };
+    if (writes) {
+      if (!operation || operation.kind !== 'write') {
+        throw new TypeError('A guarded writes adapter needs the write operation descriptor.');
+      }
+      return writes.run({ operation, text: plan.text, perform });
+    }
+    if (!guard || typeof guard.run !== 'function') {
+      throw new TypeError('createActions needs a guard or writes adapter to perform writes.');
+    }
+    return guard.run({ text: plan.text, perform });
+  }
+
   // One paged listing. `after` is the cursor for the next page.
   async function listing(path, { sort, time, limit = 25, after }, what) {
     const query = { limit: checkLimit(limit) };
@@ -371,83 +575,55 @@ export function createActions({ client, guard, footer = '', authMode = 'oauth' }
       return { authMode, ok: checks.every((check) => check.ok), checks, elapsedMs: Date.now() - started };
     },
 
-    // ---- Writes. Each goes through the guard: spacing, duplicate check, and the hourly cap. ----
+    // ---- Writes. Each goes through the one configured adapter: spacing, duplicate check, and the
+    // hourly cap in legacy use; the durable account boundary when a dispatcher injects `writes`. ----
 
-    async submitPost({ subreddit, title, text, url }) {
-      checkSubreddit(subreddit);
-      if (!title?.trim()) throw new Error('A title is required.');
-      if ((text === undefined) === (url === undefined)) throw new Error('Give exactly one of --text or --url.');
-      const form = url === undefined
-        ? { api_type: 'json', sr: subreddit, kind: 'self', title, text: withFooter(text, footer) }
-        : { api_type: 'json', sr: subreddit, kind: 'link', title, url };
-      return guard.run({
-        text: [title, text ?? url].join('\n'),
-        perform: async () => unwrap(await client.request('POST', '/api/submit/', { form })),
-      });
+    async submitPost(args = {}, options = {}) {
+      return runPlan(planMutation('submitPost', args, { footer }), options.operation);
     },
 
-    async comment({ parent, text }) {
-      checkFullname(parent, POST_OR_COMMENT_RE);
-      if (!text?.trim()) throw new Error('Comment text is required.');
-      return guard.run({
-        text,
-        perform: async () => unwrap(await client.request('POST', '/api/comment/', {
-          form: { api_type: 'json', thing_id: parent, text: withFooter(text, footer) },
-        })),
-      });
+    async comment(args = {}, options = {}) {
+      return runPlan(planMutation('comment', args, { footer }), options.operation);
     },
 
     // Edits your own post (kind 't3') or comment (kind 't1'). Without a kind, either is accepted.
-    async editText({ fullname, text, kind } = {}) {
-      checkFullname(fullname, kind === 't3' ? POST_FULLNAME_RE : kind === 't1' ? COMMENT_FULLNAME_RE : POST_OR_COMMENT_RE);
-      if (!text?.trim()) throw new Error('New text is required.');
-      return guard.run({
-        text,
-        perform: async () => unwrap(await client.request('POST', '/api/editusertext/', {
-          form: { api_type: 'json', thing_id: fullname, text: withFooter(text, footer) },
-        })),
-      });
+    async editText(args = {}, options = {}) {
+      return runPlan(planMutation('editText', args, { footer }), options.operation);
     },
 
     // Deletes your own post or comment. Not reversible.
-    async deleteThing({ fullname, kind } = {}) {
-      checkFullname(fullname, kind === 't3' ? POST_FULLNAME_RE : kind === 't1' ? COMMENT_FULLNAME_RE : POST_OR_COMMENT_RE);
-      return guard.run({
-        perform: async () => unwrap(await client.request('POST', '/api/del/', { form: { id: fullname } })),
-      });
+    async deleteThing(args = {}, options = {}) {
+      return runPlan(planMutation('deleteThing', args, { footer }), options.operation);
     },
 
-    async vote({ fullname, direction }) {
-      checkFullname(fullname);
-      if (!Object.hasOwn(VOTE_DIRECTIONS, direction)) throw new Error('Direction must be up, down, or clear.');
-      return guard.run({
-        perform: () => client.request('POST', '/api/vote/', {
-          form: { id: fullname, dir: String(VOTE_DIRECTIONS[direction]) },
-        }),
-      });
+    async vote(args = {}, options = {}) {
+      return runPlan(planMutation('vote', args, { footer }), options.operation);
     },
 
-    async subscribe({ subreddit, subscribe }) {
-      checkSubreddit(subreddit);
-      return guard.run({
-        perform: () => client.request('POST', '/api/subscribe/', {
-          form: { action: subscribe ? 'sub' : 'unsub', sr_name: subreddit },
-        }),
-      });
+    async subscribe(args = {}, options = {}) {
+      return runPlan(planMutation('subscribe', args, { footer }), options.operation);
     },
 
-    async save({ fullname, undo = false }) {
-      checkFullname(fullname);
-      return guard.run({
-        perform: () => client.request('POST', undo ? '/api/unsave/' : '/api/save/', { form: { id: fullname } }),
-      });
+    async save(args = {}, options = {}) {
+      return runPlan(planMutation('save', args, { footer }), options.operation);
     },
 
-    async raw({ method, path, fields = {} }) {
-      const verb = method.toUpperCase();
+    async raw({ method, path, fields = {} } = {}, options = {}) {
+      const verb = String(method ?? '').toUpperCase();
       if (verb === 'GET') return client.request('GET', path, { query: fields });
-      if (verb === 'POST') return guard.run({ perform: () => client.request('POST', path, { form: fields }) });
-      throw new Error('Only GET and POST are supported.');
+      if (verb !== 'POST') throw new Error('Only GET and POST are supported.');
+      const plan = planRawMutation({ path, fields });
+      const operation = options.operation ?? Object.freeze({
+        tool: 'raw_post',
+        action: 'raw',
+        kind: 'write',
+        policyKey: 'raw_post',
+        target: `raw:POST:${path}`,
+        requiresIdentity: true,
+        contentHash: null,
+        args: Object.freeze({ method: 'POST', path, fields: Object.freeze({ ...fields }) }),
+      });
+      return runPlan(plan, operation);
     },
   };
   return actions;

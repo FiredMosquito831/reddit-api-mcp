@@ -25,6 +25,10 @@ function sendJson(res, status, payload) {
 
 // Streamable HTTP in stateless mode: each POST gets a fresh server and transport, and every request must
 // carry the bearer token. Bind to 127.0.0.1 unless you mean to expose it.
+//
+// The factory contract takes `{ transport: 'http' }`: a shared entry point must return the API-only
+// 32-tool inventory for HTTP. This module never imports a browser module, constructs a session
+// manager, or registers the local profile/browser helpers.
 export function startHttpMcpServer({ createMcpServer, host = '127.0.0.1', port = 3000, token }) {
   if (!token) {
     throw new Error('REDDIT_MCP_TOKEN is required for HTTP mode. Create one with: node src/mcp.js --generate-token');
@@ -40,7 +44,7 @@ export function startHttpMcpServer({ createMcpServer, host = '127.0.0.1', port =
     }
     try {
       const body = await readBody(req);
-      const server = createMcpServer();
+      const server = createMcpServer({ transport: 'http' });
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       res.on('close', () => {
         transport.close();

@@ -1,0 +1,6 @@
+{
+  "rules": [
+    { "short_name": "Be kind", "description": "No harassment.", "kind": "link" },
+    { "short_name": "Stay on topic", "description": "Node only.", "kind": "all" }
+  ]
+}

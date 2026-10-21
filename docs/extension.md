@@ -5,10 +5,15 @@ The extension packages the MCP server as a single `.mcpb` file. You install it o
 ## What you get
 
 - One file, `dist/reddit-api-mcp.mcpb`, built from this repository.
-- The 32 tools from [mcp.md](mcp.md).
+- The 32 official-API tools from [mcp.md](mcp.md).
 - Settings for the client ID, your username, the auth mode, and the secrets, with the sensitive ones marked as such.
 
 The extension runs on your machine, on purpose. Your credentials stay local instead of living on a hosted server.
+
+The extension is **API-only**. It does not include the CLI, the local profile/browser helpers, the
+replay backend, or the browser backend, and it never needs Playwright. The manifest starts the server
+with `--api-only`, which registers exactly the 32 Reddit tools and no local helper. Browser and replay
+are local CLI/stdio features; see [browser-mode.md](browser-mode.md).
 
 ## Before you build
 
@@ -26,8 +31,10 @@ npm run mcpb
 
 The script:
 
-1. Copies `src/` into a staging folder, except the command-line tool, which the extension never runs.
-2. Writes a `package.json` with `"type": "module"` next to the code, and keeps only the runtime dependencies.
+1. Copies `src/` into a staging folder, except the command-line modules, the local browser helper,
+   and the browser/replay backends, which the extension never runs. The planned bundle is
+   self-contained; a smoke test starts it over stdio and checks the 32-tool inventory.
+2. Writes a `package.json` with `"type": "module"` next to the code, and keeps only the runtime dependencies. Playwright is not included.
 3. Installs those dependencies for this platform, and drops the lockfile.
 4. Writes `manifest.json`, with the settings described below.
 5. Validates the manifest with `@anthropic-ai/mcpb`, and packs the bundle.
@@ -81,8 +88,11 @@ Reddit may issue a new refresh token each time one is used. The extension keeps 
 
 ## Safety
 
-- The extension has the same guard as the CLI, and every write tool requires `confirm: true`.
-- Keep Claude Desktop's approval prompts on for write tools.
+- The extension uses the same guarded official-API write path as the CLI: per-account spacing,
+  duplicate check, hourly cap, one durable attempt, and one dispatch.
+- Application-level confirmation is **off by default for all 11 write tools, including deletes**.
+  `confirm: true` is optional evidence, never proof of approval. Keep Claude Desktop's approval
+  prompts on for write tools; that host prompt is the gate you rely on here.
 - The bundle runs with your user's permissions, so it can do whatever the account can do. The account is the real limit.
 
 ## Updating
@@ -95,3 +105,4 @@ When the code changes, run `npm run mcpb` again and install the new `.mcpb` file
 - It is not signed. Claude Desktop may show an unsigned-extension warning.
 - One bundle works on one operating system. Build a separate one for each system you use.
 - Node.js 22.12 or newer must be available to Claude Desktop.
+- It is API-only: no browser, replay, profile registry, or local helper tools. Use a local checkout for those.

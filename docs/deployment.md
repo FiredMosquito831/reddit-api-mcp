@@ -6,6 +6,15 @@ This page covers running the HTTP server, with Docker or without it. For the std
 
 Use the HTTP server when the client cannot start a local process, or when you want one server that several clients share. For a single machine, stdio is simpler and has fewer moving parts.
 
+## Browser and replay backends are not available here
+
+HTTP, Docker, and the Claude Desktop extension are **API-only** by design. The image copies `src/`
+without the CLI or the browser/replay modules, and Playwright is an optional peer that is never
+installed by a tool call. A request that selects `backend: "replay"` or `backend: "browser"` is
+rejected before any browser or profile work. The 32 Reddit tools are served; the 11 local
+profile/browser helpers are not registered. Use the local CLI or a local stdio server for the
+experimental backends. See [browser-mode.md](browser-mode.md).
+
 ## The image
 
 The `Dockerfile` builds a small image:

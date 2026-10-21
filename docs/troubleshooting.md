@@ -75,22 +75,46 @@ Nothing to log out of in `password` or `app` mode. Change the password on Reddit
 `app` mode reads public data only. Use `oauth` or `password` mode to write.
 
 **`Refusing to write without confirm: true.`**
-An MCP write tool was called without `confirm`. Your host normally sets this after you approve the call. If you are calling the tool yourself, pass `confirm: true`.
+This message belongs to older builds. In this build application confirmation is off by default, so a
+write does not need `confirm`. The tool does refuse when the profile policy requires a trusted local
+approval and none was obtained (`APPROVAL_REQUIRED`) or when the operation is not admitted. See
+[configuration.md](configuration.md#confirmations).
+
+**`This action requires a trusted local confirmation, which needs an interactive terminal.`**
+The profile requires a confirmation, but the command or tool call has no terminal to ask in. Run it
+in a terminal, or change the profile policy deliberately. `--yes` and `confirm: true` do not satisfy
+this requirement.
+
+**`The local confirmation was declined. Nothing was sent.`**
+You answered no to the local approval prompt. Nothing was dispatched. Nothing else is needed.
+
+**`This profile is not bound to a verified Reddit account yet, so a local approval cannot be bound to it.`**
+Sign in or enroll the profile, then retry. An approval is bound to a verified account on purpose.
 
 **`Identical text was already sent recently. Change it, or wait before sending it again.`**
-The same text (ignoring case and extra spaces) was written in the last 24 hours, possibly in another subreddit. Change the text. This check is there to prevent spam, not to annoy you.
+The same text (ignoring case and extra spaces) was written in the last 24 hours, possibly in another
+subreddit, or a previous attempt with that text is still unresolved. Change the text, or resolve the
+pending attempt. This check prevents spam.
 
 **`Hourly write limit reached (30). Wait, or raise REDDIT_CLI_MAX_WRITES_PER_HOUR.`**
 You hit the cap for the hour. Wait, or raise the limit deliberately.
 
 **`Confirmation needed: run in a terminal, or pass --yes.`**
-A write needs your answer, and there is no terminal to ask in. Run it in a terminal, or add `--yes` if you are sure. Scripts must pass `--yes`.
+An older prompt path. Current builds ask only when the profile policy (or `--confirm`) requires it,
+and then require a terminal and a trusted local approval. `--yes` is accepted for compatibility and
+does not weaken a stored policy.
 
 **`Cancelled.`**
 You answered anything other than `y` or `yes`. Nothing was sent.
 
 **`This step needs an interactive terminal.`**
-`login` and the confirmation prompts need a terminal. Run them there, not from a script.
+`login`, browser enrollment, local approvals, and password entry need a terminal. Run them there,
+not from a script.
+
+**`PROFILE_REQUIRED` / `No profile is configured and no default is set.`**
+Named profiles exist but none is the saved default, and no profile was passed. Run
+`reddit-cli profile default <name>`, pass `--profile <name>`, or set up the environment-only legacy
+configuration. The tool never chooses the first profile.
 
 **`Reddit refused the request (CODE): message`**
 Reddit rejected the action, and the message says why. The code is Reddit's own name for the problem, such as `SUBREDDIT_NOTALLOWED` (you cannot post there). Read the message, fix the input, and try again.
@@ -142,6 +166,67 @@ The path needs a leading slash. In Git Bash, prefix the command with `MSYS_NO_PA
 
 **`Only GET and POST are supported.`**
 `api` sends GET or POST only.
+
+## Profiles, backends, and the browser
+
+**`BROWSER_DEPENDENCY_MISSING`**
+The optional Playwright package is not installed. `browser doctor` prints the exact commands. Run
+`reddit-cli browser setup --install-package --install-browser --yes`, or the two npm/Playwright
+commands in [browser-mode.md](browser-mode.md#install-playwright-optional-explicit). No tool call or
+doctor run installs it for you.
+
+**`BROWSER_BINARY_MISSING`**
+The Playwright package loads but its Chromium build is absent. Run `npx playwright install chromium`.
+
+**`BROWSER_CHANNEL_UNSUPPORTED`**
+The configured browser channel is not one this build supports. Use the default Chromium install.
+
+**`BACKEND_UNAVAILABLE` (`session_manager_unavailable` or `dependency_load_failed`)**
+The selected backend needs a component that is absent or broken. Check `browser doctor`, and select
+another enabled backend for this operation. `auto` falls back only before dispatch, and never around
+a refusal or an unknown write.
+
+**`PROFILE_IN_USE`**
+Another CLI or MCP process owns this browser profile. Close that task or process; never attach to a
+debug port or make a second cookie copy. Independent profiles may run at the same time.
+
+**`LOGIN_REQUIRED` (`session_expired` or `session_not_open`)**
+The dedicated profile has no verified session. Run `reddit-cli browser login <name>` and sign in
+yourself. Replay and the UI do not promise eternal authentication.
+
+**`IDENTITY_MISMATCH` / `IDENTITY_UNVERIFIED`**
+The browser is signed in as another account, or the account could not be verified. Re-enroll the
+intended account. Authenticated work is blocked rather than guessed.
+
+**`USER_HANDOFF_REQUIRED` (`security_challenge`)**
+Reddit showed a CAPTCHA, 2FA, or security screen. Finish it in the visible window; the tool does not
+solve it, retry, or reroute. Use `reddit_browser_handoff` if a task is open.
+
+**`CONTINUATION_INVALID` / `CONTINUATION_EXPIRED`**
+A UI continuation token cannot be used: it expired, belongs to another profile/account/backend, or
+this build cannot resume it (`continuation_resume_unverified`). Restart the read without the token.
+It is not an API `after` cursor.
+
+**`OUTCOME_UNKNOWN`**
+A write may have reached Reddit, and its result is uncertain. Do not retry, especially through another
+backend. Check the account in a browser. The attempt stays durable and the account cache is
+invalidated until reconciled.
+
+**`PARAMETER_UNSUPPORTED` (`flair_template_ids_unavailable`, `branch_ids_unavailable`)**
+The rendered UI cannot produce the essential ids this tool needs. Replay is also unsupported for
+`get_post_flairs`. No equivalent endpoint was guessed. Use the official API for that operation.
+
+**`STEP_STALE`**
+A browser step used an old task or observation. Take a fresh `reddit_browser_observe` and use its
+observation id. Steps are task-bound and expire.
+
+**`UNSUPPORTED_OPERATION`**
+The selected backend does not implement this operation. `auto` may try the next eligible backend
+before dispatch. An explicit backend returns this result rather than silently switching.
+
+**`POLICY_CHANGED`**
+The profile's policy or credential generation changed while a write was queued. The write was
+cancelled before dispatch. Review the new settings and start a new operation.
 
 ## Public feed (RSS)
 

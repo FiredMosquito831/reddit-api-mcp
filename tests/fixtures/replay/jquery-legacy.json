@@ -1,0 +1,8 @@
+{
+  "jquery": [
+    [0, 1, "call", ["body"]],
+    [1, 2, "attr", "find"],
+    [2, 3, "call", [".status"]],
+    [3, 4, "attr", "hide"]
+  ]
+}

@@ -160,7 +160,7 @@ node --env-file-if-exists=.env src/cli.js post YOUR_TEST_SUB --title "Hello" --t
 node --env-file-if-exists=.env src/cli.js post YOUR_TEST_SUB --title "Hello" --text "A test post"
 ```
 
-The first command prints what would be sent and sends nothing. The second asks you to confirm.
+The first command prints what would be sent and sends nothing. The second sends it. Application-level confirmation is off by default; a profile can require a trusted local approval. Use `--dry-run` and a community you own for the first real write.
 
 ## Revoking and cleaning up
 
@@ -189,7 +189,7 @@ The first command prints what would be sent and sends nothing. The second asks y
 
 Reddit's rules are the ones that matter, and they change. This project follows the rules that apply to a personal, non-commercial tool acting for its owner:
 
-- Use the official API with your own grant. No scraping, no private endpoints, no browser cookies.
+- Use the official API with your own grant. This project does not scrape public pages, use undocumented private endpoints, or borrow another client's ID. An experimental, owner-approved exception exists for replaying requests and operating the rendered UI through a dedicated browser profile you enroll yourself; Reddit's terms may not permit or continue to permit that route. Prefer the official API and follow Reddit's current rules. See [browser-mode.md](browser-mode.md).
 - Identify the tool honestly in the User-Agent. Never impersonate a client.
 - Keep actions single and deliberate. No bulk voting, no automated engagement, no spam.
 - Respect rate limits. The client enforces a cap of 60 requests a minute and backs off when Reddit throttles.

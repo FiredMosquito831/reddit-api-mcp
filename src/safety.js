@@ -7,11 +7,38 @@ const DAY_MS = 24 * HOUR_MS;
 const MAX_LOG_ENTRIES = 500;
 const sleepFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export { HOUR_MS, DAY_MS };
+
 // Case and spacing are normalized, so trivial edits don't defeat the duplicate check.
 export function fingerprint(text) {
   const normalized = text.trim().toLowerCase().replace(/\s+/g, ' ');
   return createHash('sha256').update(normalized).digest('hex');
 }
+
+// Shared admission rules. The legacy guard below and the durable account ledger in
+// src/attempts.js use these same helpers, so there is one definition of the hourly cap and the
+// spacing rule instead of two guards drifting apart. Entries are `{ at }` timestamps.
+export function writesWithin(entries, now, windowMs = HOUR_MS) {
+  return entries.filter((entry) => now - entry.at < windowMs);
+}
+
+export function assertHourlyCap(entries, now, maxWritesPerHour) {
+  if (writesWithin(entries, now).length >= maxWritesPerHour) {
+    const error = new Error(`Hourly write limit reached (${maxWritesPerHour}). Wait, or raise REDDIT_CLI_MAX_WRITES_PER_HOUR.`);
+    error.code = 'THROTTLED';
+    throw error;
+  }
+}
+
+export function hasRecentFingerprint(entries, fp, now, duplicateWindowMs = DAY_MS) {
+  return entries.some((entry) => entry.fp === fp && now - entry.at < duplicateWindowMs);
+}
+
+export function spacingDelay(entries, now, minGapMs) {
+  const lastAt = entries.reduce((latest, entry) => Math.max(latest, entry.at), 0);
+  return Math.max(0, lastAt + minGapMs - now);
+}
+
 
 // The log keeps timestamps and hashes, never the text itself.
 export function createFileLog(path) {
@@ -57,18 +84,14 @@ export function createWriteGuard({
       const entries = await log.load();
       const time = now();
 
-      const sentLastHour = entries.filter((entry) => time - entry.at < HOUR_MS).length;
-      if (sentLastHour >= maxWritesPerHour) {
-        throw new Error(`Hourly write limit reached (${maxWritesPerHour}). Wait, or raise REDDIT_CLI_MAX_WRITES_PER_HOUR.`);
-      }
+      assertHourlyCap(entries, time, maxWritesPerHour);
 
       const fp = text === undefined ? null : fingerprint(text);
-      if (fp !== null && entries.some((entry) => entry.fp === fp && time - entry.at < duplicateWindowMs)) {
+      if (fp !== null && hasRecentFingerprint(entries, fp, time, duplicateWindowMs)) {
         throw new Error('Identical text was already sent recently. Change it, or wait before sending it again.');
       }
 
-      const lastAt = entries.reduce((latest, entry) => Math.max(latest, entry.at), 0);
-      const waitMs = lastAt + minGapMs - time;
+      const waitMs = spacingDelay(entries, time, minGapMs);
       if (waitMs > 0) await sleep(waitMs);
 
       const result = await perform();

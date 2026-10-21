@@ -1,0 +1,10 @@
+{
+  "kind": "User",
+  "data": {
+    "name": "alice",
+    "id": "abc123",
+    "link_karma": 12,
+    "comment_karma": 34,
+    "modhash": "modhash-from-own-session"
+  }
+}
