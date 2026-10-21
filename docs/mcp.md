@@ -1,6 +1,6 @@
 # MCP server
 
-`reddit-api-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server. It exposes Reddit as 32 tools that Claude, or any MCP client, can call. It has two transports:
+`reddit-api-automation-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server. It exposes Reddit as 32 tools that Claude, or any MCP client, can call. It has two transports:
 
 - **stdio** (the default). The host starts the server as a child process and talks to it over standard input and output. Claude Desktop and Claude Code do this. Stdio also exposes 11 local profile/browser helpers.
 - **HTTP**. The server listens on a port, and every request must carry a bearer token. Use this for hosted setups, or for clients that connect over HTTP. HTTP exposes exactly the 32 Reddit tools.
@@ -35,7 +35,7 @@ Add an entry. Use the absolute path to `src/mcp.js` in your checkout:
   "mcpServers": {
     "reddit": {
       "command": "node",
-      "args": ["C:/path/to/reddit-api-mcp/src/mcp.js"],
+      "args": ["C:/path/to/reddit-api-automation-mcp/src/mcp.js"],
       "env": {
         "REDDIT_AUTH_MODE": "oauth",
         "REDDIT_CLIENT_ID": "your-client-id",
@@ -63,7 +63,7 @@ claude mcp add reddit \
   -e REDDIT_AUTH_MODE=oauth \
   -e REDDIT_CLIENT_ID=your-client-id \
   -e REDDIT_USERNAME=your-username \
-  -- node /absolute/path/to/reddit-api-mcp/src/mcp.js
+  -- node /absolute/path/to/reddit-api-automation-mcp/src/mcp.js
 ```
 
 The `-e` values appear in your shell history. Keep the secret out of it: set `REDDIT_CLIENT_SECRET` and `REDDIT_REFRESH_TOKEN` in your shell environment instead, and omit the `-e` for them. Claude Code passes its own environment to the server.

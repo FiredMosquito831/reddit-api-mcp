@@ -278,4 +278,4 @@ If `test` passes but a write fails, check the write-specific messages above. If 
 
 ## Reporting a problem
 
-Open an issue at [github.com/FiredMosquito831/reddit-api-mcp](https://github.com/FiredMosquito831/reddit-api-mcp/issues). For security problems, see [security.md](security.md#reporting-a-problem). Include the command, the mode, the message, and the version (`reddit-cli --version`). Never include a token, a password, or a client secret.
+Open an issue at [github.com/FiredMosquito831/reddit-api-automation-mcp](https://github.com/FiredMosquito831/reddit-api-automation-mcp/issues). For security problems, see [security.md](security.md#reporting-a-problem). Include the command, the mode, the message, and the version (`reddit-cli --version`). Never include a token, a password, or a client secret.

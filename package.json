@@ -1,8 +1,8 @@
 {
-  "name": "reddit-api-mcp",
+  "name": "reddit-api-automation-mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "Command-line control of your own Reddit account through Reddit's official OAuth API",
+  "description": "Command-line and MCP control of your own Reddit account, over Reddit's official API or an experimental own-session fallback",
   "type": "module",
   "bin": {
     "reddit-cli": "src/cli.js",

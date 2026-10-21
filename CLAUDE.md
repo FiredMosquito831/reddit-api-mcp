@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`reddit-api-mcp`: a Node.js client for Reddit that acts for the user's own account, in four forms: a command-line tool (`src/cli.js`), an MCP server over stdio or Streamable HTTP (`src/mcp.js`), a Docker image for the HTTP server, and a Claude Desktop extension (`.mcpb`). Three backends can carry the same 32 tools: the official API (preferred), experimental request replay, and an experimental rendered Playwright UI. The feature set is ported from jordanburke/reddit-mcp-server, karanb192/reddit-mcp-buddy, and adhikasp/mcp-reddit (credited in `NOTICE.md`). It is plain JavaScript (ES modules), not TypeScript.
+`reddit-api-automation-mcp`: a Node.js client for Reddit that acts for the user's own account, in four forms: a command-line tool (`src/cli.js`), an MCP server over stdio or Streamable HTTP (`src/mcp.js`), a Docker image for the HTTP server, and a Claude Desktop extension (`.mcpb`). Three backends can carry the same 32 tools: the official API (preferred), experimental request replay, and an experimental rendered Playwright UI. The feature set is ported from jordanburke/reddit-mcp-server, karanb192/reddit-mcp-buddy, and adhikasp/mcp-reddit (credited in `NOTICE.md`). It is plain JavaScript (ES modules), not TypeScript.
 
-The repository is `FiredMosquito831/reddit-api-mcp` on GitHub. It was created private and made public on 2026-10-20.
+The repository is `FiredMosquito831/reddit-api-automation-mcp` on GitHub. It was created private and made public on 2026-10-20.
 
 ## Commands
 
@@ -14,9 +14,9 @@ The repository is `FiredMosquito831/reddit-api-mcp` on GitHub. It was created pr
 - `node src/cli.js --help`, or `npm link` once and then `reddit-cli --help`.
 - `npm run mcp` (stdio, for Claude Desktop or Claude Code) and `npm run mcp:http` (Streamable HTTP, needs `REDDIT_MCP_TOKEN`).
 - `node src/mcp.js --generate-token`: prints a random bearer token for HTTP mode.
-- `npm run mcpb`: builds `dist/reddit-api-mcp.mcpb` for the platform it runs on. The bundle is API-only: it excludes the CLI modules and the browser/replay backends, and never includes Playwright.
+- `npm run mcpb`: builds `dist/reddit-api-automation-mcp.mcpb` for the platform it runs on. The bundle is API-only: it excludes the CLI modules and the browser/replay backends, and never includes Playwright.
 - `npm run rate-limit`: sends a few live reads with the cache off, and prints Reddit's rate-limit headers. Needs a working API setup.
-- `docker build -t reddit-api-mcp .` and `docker compose up -d`: the API-only HTTP server on `127.0.0.1:3000`.
+- `docker build -t reddit-api-automation-mcp .` and `docker compose up -d`: the API-only HTTP server on `127.0.0.1:3000`.
 - `reddit-cli login|logout|token` accept `--profile <name>` to act on a named profile instead of the environment keychain entry.
 - `reddit-cli scopes`: every OAuth scope, whether login requests it, and why the rest are omitted. Needs no configuration.
 - Profiles: `profile add|list|default|status|configure|approve-settings|credentials|logout|remove`.

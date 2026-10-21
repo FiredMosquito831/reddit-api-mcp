@@ -78,7 +78,7 @@ Dockerfile, .dockerignore, docker-compose.yml
 | `npm test` | Runs every test suite. Offline. |
 | `npm run mcp` | Starts the stdio MCP server. |
 | `npm run mcp:http` | Starts the HTTP MCP server. Needs `REDDIT_MCP_TOKEN`. |
-| `npm run mcpb` | Builds `dist/reddit-api-mcp.mcpb`. |
+| `npm run mcpb` | Builds `dist/reddit-api-automation-mcp.mcpb`. |
 | `npm run rate-limit` | Sends a few live reads and prints Reddit's rate-limit headers. Needs a working setup. |
 
 ## Tests
@@ -208,7 +208,7 @@ route or its natural offline/RSS route. Offline adapters do not satisfy that tar
 1. Update the version in `package.json` and in `VERSION` in `src/config.js`. They must match.
 2. Run `npm test`.
 3. Run `npm run mcpb` and check the output.
-4. Build the image with `docker build -t reddit-api-mcp .`, and run the check in [deployment.md](deployment.md#check-that-it-works).
+4. Build the image with `docker build -t reddit-api-automation-mcp .`, and run the check in [deployment.md](deployment.md#check-that-it-works).
 5. Commit, then push. Commit messages in this repository end with the owner's attribution line.
 
 ## Dependencies

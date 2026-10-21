@@ -4,7 +4,7 @@ The extension packages the MCP server as a single `.mcpb` file. You install it o
 
 ## What you get
 
-- One file, `dist/reddit-api-mcp.mcpb`, built from this repository.
+- One file, `dist/reddit-api-automation-mcp.mcpb`, built from this repository.
 - The 32 official-API tools from [mcp.md](mcp.md).
 - Settings for the client ID, your username, the auth mode, and the secrets, with the sensitive ones marked as such.
 
@@ -39,7 +39,7 @@ The script:
 4. Writes `manifest.json`, with the settings described below.
 5. Validates the manifest with `@anthropic-ai/mcpb`, and packs the bundle.
 
-The output is `dist/reddit-api-mcp.mcpb`, about 4 MB. The `dist/` folder is git-ignored.
+The output is `dist/reddit-api-automation-mcp.mcpb`, about 4 MB. The `dist/` folder is git-ignored.
 
 ## Install
 

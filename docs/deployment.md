@@ -29,25 +29,25 @@ The `Dockerfile` builds a small image:
 Build it from the repository root:
 
 ```
-docker build -t reddit-api-mcp .
+docker build -t reddit-api-automation-mcp .
 ```
 
 ## Run with Docker
 
 ```
-docker run -d --name reddit-api-mcp \
+docker run -d --name reddit-api-automation-mcp \
   -p 127.0.0.1:3000:3000 \
   -e REDDIT_AUTH_MODE=app \
   -e REDDIT_CLIENT_ID=your-client-id \
   -e REDDIT_CLIENT_SECRET=your-secret \
   -e REDDIT_USERNAME=your-username \
   -e REDDIT_MCP_TOKEN=your-bearer-token \
-  reddit-api-mcp
+  reddit-api-automation-mcp
 ```
 
 The port mapping binds to `127.0.0.1` on your machine. Without that prefix, Docker publishes the port on every interface, which exposes the server to your network.
 
-Docker Desktop can take a few seconds to forward a new port after `docker run`. If the first request fails, wait a moment and try again. Check the container with `docker logs reddit-api-mcp`. A healthy start prints `reddit-api-mcp listening on http://0.0.0.0:3000/mcp`.
+Docker Desktop can take a few seconds to forward a new port after `docker run`. If the first request fails, wait a moment and try again. Check the container with `docker logs reddit-api-automation-mcp`. A healthy start prints `reddit-api-automation-mcp listening on http://0.0.0.0:3000/mcp`.
 
 ## Run with Compose
 
@@ -92,7 +92,7 @@ curl -X POST http://127.0.0.1:3000/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
 ```
 
-A reply containing `"serverInfo":{"name":"reddit-api-mcp"...}` means the server is up and the token is right. A `401` means the token is wrong or missing. A connection error right after `docker run` means the port is still being forwarded.
+A reply containing `"serverInfo":{"name":"reddit-api-automation-mcp"...}` means the server is up and the token is right. A `401` means the token is wrong or missing. A connection error right after `docker run` means the port is still being forwarded.
 
 ## Without Docker
 
@@ -126,8 +126,8 @@ The defaults are chosen so you do not expose the server by accident. If you need
 ## Updating and stopping
 
 ```
-docker build -t reddit-api-mcp .          # after a git pull
+docker build -t reddit-api-automation-mcp .          # after a git pull
 docker compose up -d --build              # with Compose
-docker stop reddit-api-mcp && docker rm reddit-api-mcp
+docker stop reddit-api-automation-mcp && docker rm reddit-api-automation-mcp
 docker compose down
 ```

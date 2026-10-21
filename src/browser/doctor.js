@@ -193,7 +193,7 @@ export async function browserDoctor({
     status.state = 'dependencies_missing';
     status.package.reason = isModuleNotFound(error) ? 'not_installed' : 'import_failed';
     hints.push('Playwright is an optional peer dependency and is not installed; API and RSS modes do not need it.');
-    hints.push('Run the package command in the reddit-api-mcp install directory, then run browser doctor again. Nothing is downloaded automatically.');
+    hints.push('Run the package command in the reddit-api-automation-mcp install directory, then run browser doctor again. Nothing is downloaded automatically.');
     hints.push('The pinned version shown is a setup recommendation, not a recorded live-tested version.');
     if (platform === 'win32') {
       hints.push('On Windows, do not pass --with-deps; install any required system component yourself.');
@@ -473,7 +473,7 @@ export async function setupBrowser({
   }
 
   report.hints.push('Only the explicitly requested setup steps were run.');
-  report.hints.push(`The package was installed in the reddit-api-mcp install directory (${TOOL_PACKAGE_ROOT}).`);
+  report.hints.push(`The package was installed in the reddit-api-automation-mcp install directory (${TOOL_PACKAGE_ROOT}).`);
   if (platform === 'win32') {
     report.hints.push('On Windows, no --with-deps argument was used.');
   }

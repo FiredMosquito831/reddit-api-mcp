@@ -643,7 +643,7 @@ export function createRedditMcpServer(options = {}) {
   // With neither a dispatcher nor injected actions, fall back to HEAD's lazily opened environment
   // session so existing direct callers (including an HTTP factory reference) keep working.
   const executor = dispatcher ?? createLegacyExecutor(getActions ?? createEnvActions());
-  const server = new McpServer({ name: 'reddit-api-mcp', version: VERSION });
+  const server = new McpServer({ name: 'reddit-api-automation-mcp', version: VERSION });
 
   async function runReddit(spec, args, extra) {
     const { profile, backend, continuation, confirm, ...toolArgs } = args;

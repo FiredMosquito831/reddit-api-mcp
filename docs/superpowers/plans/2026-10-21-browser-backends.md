@@ -333,5 +333,5 @@ Offline verification of the Task 15 review findings. No commits, staging, live R
 - [x] Raw POST is routed through the shared write boundary with the `raw_post` admission key (`dispatcher.executeRaw`, CLI `api POST`); GET remains the existing official-API path.
 - [x] The MCPB manifest starts `mcp.js --api-only`; the plan excludes the local helper and browser/replay modules, and a planned-bundle stdio smoke reaches `initialize` and lists exactly 32 tools. Stdio started without the flag also degrades to API-only when browser modules are absent.
 - [x] `npm test`: 732 tests, 731 pass, 0 fail, 1 Windows symlink skip. `git diff --check` clean; `package.json`/`package-lock.json` parse.
-- [x] `npm run mcpb` built `dist/reddit-api-mcp.mcpb` (3.9 MB, win32); the staged bundle lists 32 tools and serves offline `reddit_explain`.
+- [x] `npm run mcpb` built `dist/reddit-api-automation-mcp.mcpb` (3.9 MB, win32); the staged bundle lists 32 tools and serves offline `reddit_explain`.
 - [ ] T16 (live account/browser/replay/keyring verification) remains blocked; no mapping or selector is claimed live-verified.

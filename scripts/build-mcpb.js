@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds dist/reddit-api-mcp.mcpb, a Claude Desktop extension that runs the MCP server (src/mcp.js) over stdio.
+// Builds dist/reddit-api-automation-mcp.mcpb, a Claude Desktop extension that runs the MCP server (src/mcp.js) over stdio.
 // The bundle carries the server code and its runtime dependencies for this platform. The CLI, tests, scripts,
 // and docs are left out. Run it with: npm run mcpb
 //
@@ -520,7 +520,7 @@ function main() {
   const bundleDir = join(dist, 'mcpb');
   const serverDir = join(bundleDir, 'server');
   const manifestPath = join(bundleDir, 'manifest.json');
-  const outFile = join(dist, 'reddit-api-mcp.mcpb');
+  const outFile = join(dist, 'reddit-api-automation-mcp.mcpb');
   const mcpb = join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'mcpb.cmd' : 'mcpb');
 
   rmSync(bundleDir, { recursive: true, force: true });

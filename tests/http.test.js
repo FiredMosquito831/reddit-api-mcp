@@ -59,7 +59,7 @@ test('HTTP mode answers initialize with the server identity when the token is ri
     });
     assert.equal(res.status, 200);
     const payload = await res.json();
-    assert.equal(payload.result.serverInfo.name, 'reddit-api-mcp');
+    assert.equal(payload.result.serverInfo.name, 'reddit-api-automation-mcp');
   });
 });
 
@@ -103,7 +103,7 @@ test('an HTTP factory passed the bare constructor still starts and serves reques
     });
     assert.equal(res.status, 200);
     const payload = await res.json();
-    assert.equal(payload.result.serverInfo.name, 'reddit-api-mcp');
+    assert.equal(payload.result.serverInfo.name, 'reddit-api-automation-mcp');
   }, createRedditMcpServer);
 });
 

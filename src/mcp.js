@@ -134,7 +134,7 @@ if (args.includes('--generate-token')) {
     port,
     token: process.env.REDDIT_MCP_TOKEN?.trim(),
   });
-  console.error(`reddit-api-mcp listening on http://${host}:${httpServer.address().port}/mcp`);
+  console.error(`reddit-api-automation-mcp listening on http://${host}:${httpServer.address().port}/mcp`);
 } else {
   // `--api-only` is the API-only stdio surface used by the Claude Desktop bundle: 32 Reddit tools,
   // no local profile/browser helpers, no Playwright. A source/local stdio install uses the browser

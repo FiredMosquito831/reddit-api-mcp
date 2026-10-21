@@ -37,7 +37,7 @@ Fill in the form:
 
 | Field | Value |
 |---|---|
-| **name** | Anything, for example `reddit-api-mcp-personal`. Reddit shows it to you when you approve access. |
+| **name** | Anything, for example `reddit-api-automation-mcp-personal`. Reddit shows it to you when you approve access. |
 | **app type** | See the table below. |
 | **description** | Optional. |
 | **about url** | Optional. Leave it blank. |
@@ -98,7 +98,7 @@ Make your first writes in a community you own, not in someone else's. Create one
 ## Step 7: Get the software
 
 1. Install Node.js 22.12 or newer: [nodejs.org](https://nodejs.org/).
-2. Install Git, then clone the repository: [github.com/FiredMosquito831/reddit-api-mcp](https://github.com/FiredMosquito831/reddit-api-mcp). It is public, so you can clone it without signing in.
+2. Install Git, then clone the repository: [github.com/FiredMosquito831/reddit-api-automation-mcp](https://github.com/FiredMosquito831/reddit-api-automation-mcp). It is public, so you can clone it without signing in.
 3. In the project folder:
    ```
    npm install
@@ -183,7 +183,7 @@ The first command prints what would be sent and sends nothing. The second sends 
 - Reddit API wiki (archived): [github.com/reddit/reddit/wiki/API](https://github.com/reddit/reddit/wiki/API)
 - Reddit OAuth2 wiki (archived): [github.com/reddit-archive/reddit/wiki/OAuth2](https://github.com/reddit-archive/reddit/wiki/OAuth2)
 - Node.js: [nodejs.org](https://nodejs.org/)
-- This project: [github.com/FiredMosquito831/reddit-api-mcp](https://github.com/FiredMosquito831/reddit-api-mcp)
+- This project: [github.com/FiredMosquito831/reddit-api-automation-mcp](https://github.com/FiredMosquito831/reddit-api-automation-mcp)
 
 ## Reddit's API policy
 

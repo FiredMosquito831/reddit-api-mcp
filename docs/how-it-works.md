@@ -8,7 +8,7 @@ action, how profiles and backends are selected, how logins work, and why the saf
 ```
           ┌────────────── entry points ──────────────┐
           │  reddit-cli (src/cli.js)                 │
-          │  reddit-api-mcp (src/mcp.js)             │
+          │  reddit-api-automation-mcp (src/mcp.js)             │
           │    stdio: 32 tools + 11 local helpers    │
           │    HTTP: 32 tools, API-only, bearer      │
           └───────────────────┬──────────────────────┘
@@ -300,7 +300,7 @@ treat the profile directory as a credential.
    without `commander` or Playwright.
 4. Runs `npm install --omit=dev` in the server folder, and removes the lockfile.
 5. Writes `manifest.json`: the server entry point, environment mapping, settings, and platform.
-6. Validates the manifest with `@anthropic-ai/mcpb`, and packs `dist/reddit-api-mcp.mcpb`.
+6. Validates the manifest with `@anthropic-ai/mcpb`, and packs `dist/reddit-api-automation-mcp.mcpb`.
 
 The bundle is API-only by construction.
 

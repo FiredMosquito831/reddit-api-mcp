@@ -1,4 +1,4 @@
-# reddit-api-mcp
+# reddit-api-automation-mcp
 
 Control your own Reddit account from the command line or from Claude.
 
@@ -9,7 +9,7 @@ is guarded: it can be previewed, it is spaced and capped, and it can require a l
 It runs four ways:
 
 - **`reddit-cli`**, a command-line tool.
-- **An MCP server**, `reddit-api-mcp`, over stdio for Claude Desktop and Claude Code, or over HTTP
+- **An MCP server**, `reddit-api-automation-mcp`, over stdio for Claude Desktop and Claude Code, or over HTTP
   behind a bearer token.
 - **A Docker image** for the HTTP server.
 - **A Claude Desktop extension** (`.mcpb`), built with `npm run mcpb`.

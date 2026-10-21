@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-21  
 **Status:** Owner-approved design on 2026-10-21; implementation plan in preparation. Not an implemented feature. Three Sonnet research lanes and a fresh Sonnet builder check completed. Review resolutions are recorded below.  
-**Repository:** `reddit-api-mcp`  
+**Repository:** `reddit-api-automation-mcp`  
 **First supported environment:** Windows, Node.js, Claude Code, local MCP over stdio.
 
 ## 1. Intent
